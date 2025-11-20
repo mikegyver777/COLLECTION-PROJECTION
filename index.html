@@ -1,0 +1,1652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+  />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Invoice Sheet & Profit Calculator - Alta Cal</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background:#f5f5f5; }
+    input, select, button { font-size:16px !important; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    input[type=number] { -moz-appearance:textfield; }
+    .container { max-width:1400px; min-width:1000px; margin:0 auto; }
+    .scrollable-content { padding:0 15px 15px 15px; }
+    .sticky-header { position:sticky; top:0; z-index:1000; background:#f5f5f5; padding:15px 15px 10px 15px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
+    .btn { padding:14px 24px; border:none; border-radius:8px; font-weight:600; cursor:pointer; touch-action:manipulation; }
+    .btn-primary { background:#4CAF50; color:#fff; }
+    .btn-blue { background:#2196F3; color:#fff; }
+    .header { background:#fff; border-radius:12px; padding:20px; margin-bottom:15px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
+    .header h1 { color:#1976D2; font-size:24px; margin-bottom:15px; }
+    .header-buttons { display:flex; gap:10px; flex-wrap:wrap; }
+    .week-input { background:#fff; padding:15px; border-radius:12px; margin-bottom:15px; text-align:center; }
+    .week-input input { font-size:16px; padding:12px; border:2px solid #2196F3; border-radius:6px; width:100%; max-width:400px; }
+    .summary-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+    .summary-card { color:#fff; text-align:center; padding:15px; border-radius:8px; background:linear-gradient(135deg, var(--c1), var(--c2)); }
+    .summary-card.blue   { --c1:#42A5F5; --c2:#2196F3; }
+    .summary-card.purple { --c1:#AB47BC; --c2:#9C27B0; }
+    .summary-card.green  { --c1:#4CAF50; --c2:#45a049; }
+    .summary-card.red    { --c1:#EF5350; --c2:#E53935; }
+    .summary-card .label { font-size:11px; font-weight:600; margin-bottom:5px; }
+    .summary-card .value { font-size:20px; font-weight:700; }
+    .divider { height:4px; background:linear-gradient(to right,#2196F3,#4CAF50,#9C27B0); margin:30px 0; border-radius:2px; }
+
+    /* Invoice from NOV19C */
+    .invoice-sheet { background:#fff; border:3px solid #2196F3; border-radius:12px; padding:15px; margin-bottom:20px; }
+    .invoice-header { background:#2196F3; color:#fff; padding:10px; margin:-15px -15px 15px -15px; border-radius:9px 9px 0 0; text-align:center; font-size:18px; font-weight:700; }
+    .invoice-section { margin-bottom:10px; border:2px solid #333; padding:8px; background:#fff; }
+    .invoice-section-header { background:#000; color:#fff; padding:6px 10px; font-weight:bold; margin:-8px -8px 8px -8px; font-size:14px; }
+    .top-section { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:15px; }
+    .header-box { background:#000; color:white; padding:12px; border-radius:6px; }
+    .header-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
+    .header-row:last-child { margin-bottom:0; }
+    .field { display:flex; flex-direction:column; }
+    .field label { font-size:11px; margin-bottom:4px; font-weight:bold; }
+    .field input, .field select { width:100%; box-sizing:border-box; padding:8px; border:2px solid #000; font-size:14px; }
+    .field input[type="number"] { padding-left:20px; }
+    .main-grid { display:grid; grid-template-columns:1.5fr minmax(0, 1fr); gap:10px; margin-bottom:15px; }
+    .left-side, .right-side { display:flex; flex-direction:column; gap:15px; }
+    .section { background:#f8f8f8; border:2px solid #000; padding:12px; border-radius:6px; margin-bottom:10px; overflow:visible; }
+    .section-title { background:#333; color:white; padding:8px 12px; margin:-12px -12px 12px -12px; font-weight:bold; font-size:13px; border-bottom:2px solid #000; }
+    
+    /* PAR Sections */
+    .par-buttons { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+    .par-btn { padding:10px; border:2px solid #000; background:#e0e0e0; color:#000; font-weight:bold; font-size:12px; cursor:pointer; transition:all 0.2s; border-radius:4px; }
+    .par-btn:hover { background:#d0d0d0; }
+    .par-btn.active { background:#FF9800; color:white; border-color:#FF9800; }
+    .par-fields { display:none; background:#fff3e0; border:2px solid #FF9800; padding:12px; margin-bottom:12px; border-radius:4px; }
+    .par-fields.active { display:block; }
+    .par-fields-title { font-weight:bold; font-size:12px; margin-bottom:8px; color:#FF9800; }
+    .par-input-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+    .par-addon-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr auto; gap:6px; margin-bottom:6px; align-items:end; }
+    .par-addon-row input, .par-addon-row select { width:100%; box-sizing:border-box; padding:6px 8px; border:2px solid #FF9800; font-size:12px; }
+    .par-addon-row select { padding-left:8px; }
+    .par-addon-row input[type="number"] { padding-left:20px; }
+    .par-coating-row { display:grid; grid-template-columns:2fr 0.8fr 1.2fr 1fr auto; gap:6px; margin-bottom:6px; align-items:end; }
+    .par-coating-row select, .par-coating-row input { width:100%; box-sizing:border-box; padding:6px 8px; border:2px solid #FF9800; font-size:12px; }
+    .par-coating-row input[type="number"] { padding-left:20px; }
+    .par-coating-row .calc-display { background:#fff3e0; border:2px solid #FF9800; padding:6px 8px; font-weight:bold; text-align:center; font-size:12px; }
+    .custom-fields { display:none; grid-column:1/-1; grid-template-columns:2fr 1fr 1fr 1fr auto; gap:6px; margin-top:6px; }
+    .custom-fields.active { display:grid; }
+    .add-btn { background:#4CAF50; color:#fff; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-size:14px; width:100%; margin-top:10px; font-weight:bold; }
+    .remove-btn { background:#f44336; color:white; border:none; padding:6px 10px; border-radius:4px; font-size:11px; cursor:pointer; }
+    
+    .calc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:10px; }
+    .calc-box { padding:12px; background:#fff; border:2px solid #ddd; border-radius:6px; text-align:center; }
+    .calc-box.warning { background:#FFF9C4; border-color:#FBC02D; }
+    .calc-box.info { background:#E3F2FD; border-color:#2196F3; }
+    .calc-box.highlight { background:#E8F5E9; border-color:#4CAF50; }
+    .calc-label { font-size:10px; font-weight:600; margin-bottom:4px; color:#555; text-transform:uppercase; }
+    .calc-value { font-size:18px; font-weight:700; color:#000; }
+    .input-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-bottom:10px; }
+    .name-list { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+    .name-row { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; }
+    .name-input { padding:6px 8px; border:2px solid #000; font-size:13px; border-radius:4px; }
+    .name-amount { background:#4CAF50; color:white; padding:6px 12px; font-weight:bold; font-size:14px; min-width:80px; text-align:center; border:2px solid #000; border-radius:4px; }
+    .payout-label { display:block; font-size:13px; font-weight:bold; color:black; background:#f0f0f0; border:2px solid #000; padding:6px 10px; margin-bottom:6px; text-align:center; border-radius:4px; }
+    
+    table { width:100%; border-collapse:collapse; margin-bottom:8px; font-size:13px; table-layout:fixed; }
+    table input { width:100%; box-sizing:border-box; padding:6px; }
+    table input[type="checkbox"] { width:auto; }
+    thead { background:#000; color:white; }
+    th { padding:8px; font-weight:bold; text-align:left; border:1px solid #333; }
+    td { padding:6px; border:1px solid #333; }
+    td input { border:none; background:transparent; width:100%; padding:2px; font-size:13px; }
+    input[type="checkbox"] { width:20px; height:20px; cursor:pointer; }
+
+    /* Calculator */
+    .calculator { background:#fff; border:3px solid #ccc; border-radius:12px; margin-bottom:20px; position:relative; }
+    .calc-header { background:#BBDEFB; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; }
+    .delete-btn { position:absolute; top:-10px; right:-10px; background:#EF5350; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-size:20px; cursor:pointer; z-index:10; }
+    .calc-section { padding:20px; }
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:15px; }
+    .form-group { display:flex; flex-direction:column; }
+    .form-group label { font-size:12px; font-weight:600; margin-bottom:6px; color:#555; }
+    .form-group input, .form-group select { padding:12px; border:2px solid #e0e0e0; border-radius:6px; font-size:16px; }
+    .input-with-symbol { display:flex; align-items:center; background:#fff; border:2px solid #e0e0e0; border-radius:6px; padding:0 12px; }
+    .input-with-symbol input { border:none; flex:1; padding:12px 0; text-align:right; font-size:16px; }
+    .calc-display { margin-top:5px; padding:8px; background:#e3f2fd; border:1px solid #2196F3; border-radius:4px; text-align:center; font-weight:600; font-size:14px; }
+    .auto-filled { background:#E3F2FD !important; border:2px solid #2196F3 !important; }
+
+    .big-card { background:linear-gradient(135deg, var(--c1), var(--c2)); color:#fff; padding:30px; text-align:center; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,.3); }
+    .big-card .label { font-size:16px; font-weight:700; margin-bottom:12px; text-transform:uppercase; }
+    .big-card .value { font-size:40px; font-weight:900; line-height:1.2; }
+    .bottom-totals { background:linear-gradient(135deg, #1e3c72, #2a5298); padding:30px; border-radius:12px; margin-top:20px; }
+
+    .tier-results { background:#fff; padding:12px; border-radius:6px; border:2px solid #e0e0e0; margin-top:10px; }
+    .tier-info { text-align:center; font-size:11px; font-weight:600; padding:8px; background:#f5f5f5; border-radius:4px; margin-bottom:10px; }
+    .tier-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+    .tier-person { border:2px solid #e0e0e0; border-radius:6px; padding:12px; }
+    .tier-box { text-align:center; padding:10px; border-radius:4px; margin-bottom:6px; }
+    .tier-box.light { background:#f5f5f5; border:1px solid #ddd; }
+    .tier-box.bold { background:#e8f5e9; border:2px solid #4CAF50; }
+    .tier-box.purple-light { background:#f3e5f5; border:1px solid #ddd; }
+    .tier-box.purple-bold { background:#f3e5f5; border:2px solid #9C27B0; }
+    .tier-box .tier-label { font-size:10px; font-weight:600; margin-bottom:4px; }
+    .tier-box .tier-value { font-size:18px; font-weight:700; }
+
+    @media print {
+      @page { size: legal landscape; margin: 10mm; }
+      .no-print { display:none !important; }
+      .print-view { display:block !important; }
+      .sticky-header { position:relative !important; }
+      body { background:#fff; }
+      .container { max-width:100%; }
+      section { page-break-inside:avoid; }
+    }
+    .print-view { display:none; }
+
+    @media (max-width:768px){
+      .top-section { grid-template-columns:1fr; }
+      .main-grid { grid-template-columns:1fr; }
+      .header-row { grid-template-columns:1fr; }
+    }
+
+    /* Modal styles */
+    .modal { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.7); animation:fadeIn 0.3s; }
+    .modal.active { display:flex; align-items:center; justify-content:center; }
+    .modal-content { background:white; border-radius:8px; width:90%; max-width:600px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px; border-bottom:2px solid #e0e0e0; }
+    .modal-header h2 { margin:0; font-size:22px; color:#333; }
+    .close-btn { background:#f44336; color:white; border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; }
+    .modal-tabs { display:flex; background:#f5f5f5; border-bottom:2px solid #e0e0e0; }
+    .tab-btn { flex:1; padding:15px; border:none; background:transparent; font-weight:bold; font-size:13px; cursor:pointer; border-bottom:3px solid transparent; }
+    .tab-btn.active { background:white; border-bottom:3px solid #9C27B0; color:#9C27B0; }
+    .modal-body { padding:20px; overflow-y:auto; flex:1; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .add-name-section { display:flex; gap:10px; margin-bottom:20px; }
+    .add-name-section input { flex:1; padding:10px 12px; border:2px solid #9C27B0; border-radius:4px; font-size:14px; }
+    .add-name-section button { padding:10px 20px; background:#9C27B0; color:white; border:none; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer; }
+    .names-list { display:flex; flex-direction:column; gap:8px; }
+    .name-item { display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#f5f5f5; border:2px solid #e0e0e0; border-radius:4px; }
+    .name-item span { font-size:14px; font-weight:500; }
+    .delete-name-btn { background:#f44336; color:white; border:none; padding:6px 12px; border-radius:4px; font-size:12px; cursor:pointer; }
+    .modal-footer { padding:15px 20px; border-top:2px solid #e0e0e0; display:flex; justify-content:center; gap:10px; }
+    .empty-state { text-align:center; padding:40px 20px; color:#999; font-style:italic; }
+    .name-select { width:100%; padding:6px 8px; border:2px solid #000; font-size:13px; background:white; cursor:pointer; border-radius:4px; }
+    .manage-names-btn { background:#9C27B0; color:white; padding:10px 20px; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:14px; margin:10px 0; }
+
+    /* Error banner */
+    #err { display:none; position:fixed; left:0; right:0; bottom:0; background:#b00020; color:#fff; padding:12px 16px; font-size:13px; z-index:9999; }
+    #boot { position:fixed; top:8px; right:8px; background:#000; color:#fff; padding:6px 10px; border-radius:6px; font-size:12px; opacity:.85; }
+    
+    /* Modal Styles */
+    .modal { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); }
+    .modal.active { display:flex; align-items:center; justify-content:center; }
+    .modal-content { background:#fff; border-radius:8px; width:90%; max-width:600px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px; border-bottom:2px solid #e0e0e0; }
+    .modal-header h2 { margin:0; font-size:22px; color:#333; }
+    .close-btn { background:#f44336; color:#fff; border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .close-btn:hover { background:#d32f2f; }
+    .modal-tabs { display:flex; background:#f5f5f5; border-bottom:2px solid #e0e0e0; }
+    .tab-btn { flex:1; padding:15px; border:none; background:transparent; font-weight:bold; font-size:13px; cursor:pointer; border-bottom:3px solid transparent; }
+    .tab-btn:hover { background:#e0e0e0; }
+    .tab-btn.active { background:#fff; border-bottom:3px solid #9C27B0; color:#9C27B0; }
+    .modal-body { padding:20px; overflow-y:auto; flex:1; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .add-name-section { display:flex; gap:10px; margin-bottom:20px; }
+    .add-name-section input { flex:1; padding:10px 12px; border:2px solid #9C27B0; border-radius:4px; font-size:14px; }
+    .add-name-section button { padding:10px 20px; background:#9C27B0; color:#fff; border:none; border-radius:4px; font-weight:bold; font-size:13px; cursor:pointer; }
+    .add-name-section button:hover { background:#7B1FA2; }
+    .names-list { display:flex; flex-direction:column; gap:8px; }
+    .name-item { display:flex; justify-content:space-between; align-items:center; padding:12px 15px; background:#f5f5f5; border:2px solid #e0e0e0; border-radius:4px; }
+    .name-item:hover { border-color:#9C27B0; background:#fce4ec; }
+    .name-item span { font-size:14px; font-weight:500; }
+    .delete-name-btn { background:#f44336; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-size:12px; cursor:pointer; }
+    .delete-name-btn:hover { background:#d32f2f; }
+    .modal-footer { padding:15px 20px; border-top:2px solid #e0e0e0; display:flex; justify-content:center; }
+    .empty-state { text-align:center; padding:40px 20px; color:#999; font-style:italic; }
+    .name-select { width:100%; padding:8px; border:2px solid #000; font-size:13px; background:#fff; cursor:pointer; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <noscript style="display:block;background:#ffdddd;padding:10px;text-align:center;">
+    This app requires JavaScript enabled.
+  </noscript>
+
+  <div id="boot">Booting…</div>
+  <div id="err"></div>
+
+  <div class="container">
+    <div id="mainView" class="no-print" style="display:block;">
+      <div class="sticky-header">
+        <div class="header">
+          <h1>ALTA CAL - INVOICE & PROFIT SYSTEM</h1>
+          <div class="header-buttons">
+            <button class="btn btn-primary" onclick="app.showSaveDialog()">💾 SAVE</button>
+            <button class="btn btn-blue" onclick="app.showPrintReport()">🖨️ PRINT REPORT</button>
+            <button class="btn" style="background:#9C27B0;color:#fff;" onclick="app.openManageNamesModal()">👥 MANAGE NAMES</button>
+          </div>
+        </div>
+
+        <div class="week-input">
+          <label style="display:block;font-weight:700;margin-bottom:10px;">COLLECTION WEEK PERIOD</label>
+          <input type="text" id="collectionWeek" placeholder="10/1-10/6" autocomplete="off" />
+        </div>
+
+        <div id="summaryCards" class="summary-cards"></div>
+      </div>
+
+      <div class="scrollable-content">
+        <!-- PROFIT CALCULATORS -->
+        <div id="calculators"></div>
+
+        <div style="text-align:center;" class="no-print">
+          <button class="add-btn" onclick="app.addCalculator()" style="padding:18px 35px;font-size:16px;border-radius:50px;display:inline-flex;align-items:center;gap:12px;"><span style="font-size:24px;">+</span> ADD NEW FILE</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="printView" class="print-view"></div>
+    
+    <!-- MANAGE NAMES MODAL -->
+    <div id="manageNamesModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Manage Saved Names</h2>
+          <button class="close-btn" onclick="app.closeManageNamesModal()">✕</button>
+        </div>
+        
+        <div class="modal-tabs">
+          <button class="tab-btn active" onclick="app.switchNamesTab('vets')">VETS</button>
+          <button class="tab-btn" onclick="app.switchNamesTab('reps')">REPS</button>
+          <button class="tab-btn" onclick="app.switchNamesTab('rideAlongs')">RIDE ALONGS</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- VETS TAB -->
+          <div id="vetsTab" class="tab-content active">
+            <div class="add-name-section">
+              <input type="text" id="newVetName" placeholder="Enter vet name..." onkeypress="if(event.key==='Enter') app.addNameToList('vets')">
+              <button onclick="app.addNameToList('vets')">+ ADD VET</button>
+            </div>
+            <div id="vetsList" class="names-list"></div>
+          </div>
+
+          <!-- REPS TAB -->
+          <div id="repsTab" class="tab-content">
+            <div class="add-name-section">
+              <input type="text" id="newRepName" placeholder="Enter rep name..." onkeypress="if(event.key==='Enter') app.addNameToList('reps')">
+              <button onclick="app.addNameToList('reps')">+ ADD REP</button>
+            </div>
+            <div id="repsList" class="names-list"></div>
+          </div>
+
+          <!-- RIDE ALONGS TAB -->
+          <div id="rideAlongsTab" class="tab-content">
+            <div class="add-name-section">
+              <input type="text" id="newRideAlongName" placeholder="Enter ride along name..." onkeypress="if(event.key==='Enter') app.addNameToList('rideAlongs')">
+              <button onclick="app.addNameToList('rideAlongs')">+ ADD RIDE ALONG</button>
+            </div>
+            <div id="rideAlongsList" class="names-list"></div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="app.closeManageNamesModal()">DONE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Error surface so "blank" becomes visible info
+    (function attachGlobalErrorSurface(){
+      const errEl = document.getElementById('err');
+      const bootEl = document.getElementById('boot');
+      function showError(msg) {
+        if (!errEl) return;
+        errEl.style.display = 'block';
+        errEl.textContent = 'Error: ' + msg;
+      }
+      window.addEventListener('error', function(e){ showError(e.message || 'Script error'); });
+      window.addEventListener('unhandledrejection', function(e){ showError((e.reason && e.reason.message) || String(e.reason)); });
+      window.addEventListener('DOMContentLoaded', () => { if (bootEl) bootEl.textContent = 'Booting… DOM ready'; });
+      window.__showErr = showError; // manual trigger if needed
+    })();
+  </script>
+
+  <script>
+    (function () {
+      /* ---------- Utilities (outside app) ---------- */
+      function qs(id){ return document.getElementById(id); }
+      
+      function buildFilePrintHTML(app, calc, index) {
+        const data = app.calculateOne(calc);
+        const rowColor = index % 2 === 0 ? '#fafafa' : '#fff';
+        let dropDayDisplay = '—';
+        if (calc.dropDay) {
+          const date = new Date(calc.dropDay + 'T00:00:00'); // Add time to avoid timezone issues
+          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayOfWeek = dayNames[date.getDay()];
+          const month = date.getMonth() + 1;
+          const day = date.getDate();
+          dropDayDisplay = `${dayOfWeek} ${month}/${day}`;
+        }
+        return `
+          <tr style="background:${rowColor};border-bottom:1px solid #e0e0e0;">
+            <td style="padding:10px 12px;font-weight:600;font-size:11px;color:#000;">${app.escape(calc.jobNumber || '—')}</td>
+            <td style="padding:10px 12px;font-size:11px;color:#000;">${app.escape(calc.customerName || '—')}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:600;font-size:11px;color:#000;">${app.fmt(data.totalJobCost)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:600;font-size:11px;color:#000;">${app.fmt(data.finalTotalVetsPayout)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:600;font-size:11px;color:#000;">${app.fmt(data.finalTotalRepsPayout)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:600;font-size:11px;color:#000;">${app.fmt(data.totalRideAlongPayout)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:600;font-size:11px;color:#000;">${app.fmt(data.additionalTeamPayout)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:11px;color:#000;">${app.fmt(calc.dropAmount || 0)}</td>
+            <td style="padding:10px 12px;font-weight:600;font-size:11px;color:#000;">${dropDayDisplay}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:11px;background:#fff;color:#000;">${app.fmt(data.totalTeamPayout)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:11px;background:#fff;color:#000;">${app.fmt(data.finalProfit)}</td>
+          </tr>
+        `;
+      }
+
+      const app = {
+        calculators: [],
+        nextId: 1,
+        savedNames: {
+          vets: ['John Smith', 'Mike Johnson', 'David Williams'],
+          reps: ['Sarah Davis', 'Emily Brown', 'Jessica Wilson'],
+          rideAlongs: ['Tom Anderson', 'Chris Martinez']
+        },
+
+        escape(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); },
+        fmt(v){ const n=parseFloat(v||0); const f=isFinite(n)?n.toFixed(2):'0.00'; return '$'+f.replace(/\B(?=(\d{3})+(?!\d))/g,','); },
+        parseValue(v){ if(v===null||v===undefined||v==='') return 0; const p=parseFloat(String(v).replace(/[,$]/g,'')); return isNaN(p)?0:p; },
+        roundMoney(v){ return Math.round((v||0) * 100) / 100; },
+        getHouseFeePercent(contractAmount){ const a=this.parseValue(contractAmount); if(a<=20000) return 10; if(a<=30000) return 9; return 8; },
+
+        init() {
+          this.loadSavedNames();
+          this.addCalculator();
+          this.updateSummary();
+          const boot = document.getElementById('boot'); if (boot) boot.textContent = 'OK';
+        },
+        
+        loadSavedNames(){
+          const stored = localStorage.getItem('altaCalSavedNames');
+          if(stored){
+            try{
+              this.savedNames = JSON.parse(stored);
+            }catch(e){
+              console.error('Error loading saved names:', e);
+            }
+          }
+        },
+        
+        saveSavedNames(){
+          localStorage.setItem('altaCalSavedNames', JSON.stringify(this.savedNames));
+        },
+
+        calculateOne(data){
+          const contractAmount=this.roundMoney(this.parseValue(data.contractAmount));
+          const netAmount=this.roundMoney(this.parseValue(data.netAmount));
+          const houseFeePercent=this.parseValue(data.houseFeePercent);
+          
+          // House fee is Alta Cal's cut
+          const houseFeeAmount=this.roundMoney((contractAmount*houseFeePercent)/100);
+          
+          // Fees are the difference between contract and net (dealer fees, credit card fees, etc.)
+          const fees = this.roundMoney(contractAmount - netAmount);
+          const feePercent = contractAmount > 0 ? (fees / contractAmount) * 100 : 0;
+          
+          // NOV19C Correct Calculation:
+          // afterHouseFee = contract - houseFee
+          // totalAfterFees = afterHouseFee - fees - laborMaterial
+          const afterHouseFee = this.roundMoney(contractAmount - houseFeeAmount);
+          const netAmountDiff = this.roundMoney(contractAmount - netAmount);
+          
+          // Calculate total job cost from invoice items
+          let totalJobCost = 0;
+          if (data.invoiceRows && data.invoiceRows.length > 0) {
+            data.invoiceRows.forEach(row => {
+              totalJobCost += this.parseValue(row.cost);
+            });
+          }
+          totalJobCost = this.roundMoney(totalJobCost);
+          
+          // CORRECTED: totalAfterFees = afterHouseFee - netAmountDiff - totalJobCost
+          const totalAfterFees = this.roundMoney(afterHouseFee - netAmountDiff - totalJobCost);
+          
+          // Profit percentage for tier rates (NOV19C formula)
+          const profitPercent = netAmount > 0 ? (totalAfterFees / netAmount) * 100 : 0;
+          
+          // Calculate PAR amounts
+          const guttersLF = this.parseValue(data.guttersLF);
+          const woodLF = this.parseValue(data.woodLF);
+          let parGuttersAmount = this.roundMoney((guttersLF * 27) + (woodLF * 17));
+          
+          // Add PAR add-ons for gutters
+          if (data.parAddOns && data.parAddOns.length > 0) {
+            data.parAddOns.forEach(addon => {
+              if (addon.description && addon.lf && addon.rate) {
+                parGuttersAmount += this.roundMoney(this.parseValue(addon.lf) * this.parseValue(addon.rate));
+              }
+            });
+          }
+          
+          const insulationSF = this.parseValue(data.insulationSF);
+          const insulationWoodLF = this.parseValue(data.insulationWoodLF);
+          let parInsulationAmount = this.roundMoney((insulationSF * 4) + (insulationWoodLF * 17));
+          
+          // Add PAR add-ons for insulation
+          if (data.parInsulationAddOns && data.parInsulationAddOns.length > 0) {
+            data.parInsulationAddOns.forEach(addon => {
+              if (addon.description && addon.lf && addon.rate) {
+                parInsulationAmount += this.roundMoney(this.parseValue(addon.lf) * this.parseValue(addon.rate));
+              }
+            });
+          }
+          
+          let parCoatingAmount = 0;
+          if (data.parCoatingProducts && data.parCoatingProducts.length > 0) {
+            data.parCoatingProducts.forEach(product => {
+              if (product.product && product.quantity && product.basePrice) {
+                const qty = this.parseValue(product.quantity);
+                const base = this.parseValue(product.basePrice);
+                const total = this.roundMoney(qty * base);
+                parCoatingAmount += total; // PAR amount is the TOTAL, not 30%
+              }
+            });
+          }
+          
+          // Determine active PARs
+          const activePARs = new Set(data.activePARs || []);
+          const parCount = activePARs.size;
+          
+          // Calculate available net for reps (divide by number of active PARs if multiple)
+          let availableNetForReps = netAmount;
+          if (parCount > 0) {
+            availableNetForReps = this.roundMoney(netAmount / parCount);
+          }
+
+          // Tiered rates based on profit percentage (using NOV19C formula)
+          let vetRate=25; if(profitPercent>=50) vetRate=55; else if(profitPercent>=40) vetRate=45; else if(profitPercent>=33) vetRate=35;
+          let repRate=20; if(profitPercent>=50) repRate=40; else if(profitPercent>=40) repRate=30; else if(profitPercent>=33) repRate=25;
+
+          const vetsCount=this.parseValue(data.numVets);
+          const repsCount=this.parseValue(data.numReps);
+          const totalPeople=vetsCount+repsCount||0;
+
+          // Vet commission calculation (using totalAfterFees, not afterFeesAndLabor)
+          const vetCommissionTotal=this.roundMoney((totalAfterFees*vetRate)/100);
+          const perVetPayout= totalPeople>0 ? this.roundMoney(vetCommissionTotal/totalPeople) : 0;
+
+          // Rep commission calculation
+          let repCommissionTotal = 0;
+          
+          // If PARs are active, use PAR calculation (10% base + 50% overage)
+          if (parCount > 0) {
+            // Divide net amount by number of active PARs
+            const allocatedNetPerPAR = this.roundMoney(netAmount / parCount);
+            let totalPARPayout = 0;
+            
+            // Calculate payout for each active PAR
+            if (activePARs.has('gutters')) {
+              if (allocatedNetPerPAR >= parGuttersAmount) {
+                const basePay = this.roundMoney(parGuttersAmount * 0.10);
+                const overage = this.roundMoney(allocatedNetPerPAR - parGuttersAmount);
+                const overagePay = this.roundMoney(overage * 0.50);
+                totalPARPayout += this.roundMoney(basePay + overagePay);
+              }
+            }
+            
+            if (activePARs.has('insulation')) {
+              if (allocatedNetPerPAR >= parInsulationAmount) {
+                const basePay = this.roundMoney(parInsulationAmount * 0.10);
+                const overage = this.roundMoney(allocatedNetPerPAR - parInsulationAmount);
+                const overagePay = this.roundMoney(overage * 0.50);
+                totalPARPayout += this.roundMoney(basePay + overagePay);
+              }
+            }
+            
+            if (activePARs.has('coating')) {
+              if (allocatedNetPerPAR >= parCoatingAmount) {
+                const basePay = this.roundMoney(parCoatingAmount * 0.10);
+                const overage = this.roundMoney(allocatedNetPerPAR - parCoatingAmount);
+                const overagePay = this.roundMoney(overage * 0.50);
+                totalPARPayout += this.roundMoney(basePay + overagePay);
+              }
+            }
+            
+            repCommissionTotal = totalPARPayout;
+          } else {
+            // No PARs active, use standard tiered commission
+            repCommissionTotal = this.roundMoney((totalAfterFees*repRate)/100);
+          }
+          
+          const perRepPayout= totalPeople>0 ? this.roundMoney(repCommissionTotal/totalPeople) : 0;
+
+          // Ride along calculations
+          const rideAlongFeeAmount=this.roundMoney(this.parseValue(data.rideAlong));
+          const rideAlongFeePerPerson= totalPeople>0 ? this.roundMoney(rideAlongFeeAmount/totalPeople) : 0;
+
+          const finalPerVetPayout= this.roundMoney(perVetPayout - rideAlongFeePerPerson);
+          const finalPerRepPayout= this.roundMoney(perRepPayout - rideAlongFeePerPerson);
+          const finalTotalVetsPayout= this.roundMoney(finalPerVetPayout * vetsCount);
+          const finalTotalRepsPayout= this.roundMoney(finalPerRepPayout * repsCount);
+
+          const rideAlongBonusAmount=this.roundMoney(this.parseValue(data.rideAlongBonus));
+          const numRideAlongs = this.parseValue(data.numRideAlongs);
+          const perRideAlongPayout = rideAlongFeeAmount + rideAlongBonusAmount;
+          const totalRideAlongPayout= this.roundMoney(perRideAlongPayout * numRideAlongs);
+
+          // NOTE: totalJobCost already subtracted in totalAfterFees calculation, so don't include it here!
+          const altaCalTotalPayout= this.roundMoney(finalTotalVetsPayout + finalTotalRepsPayout + totalRideAlongPayout);
+          const preliminaryProfit= this.roundMoney(totalAfterFees - altaCalTotalPayout);
+
+          const canvasserPayout= this.roundMoney(preliminaryProfit * (this.parseValue(data.canvasserPercent)/100));
+          const confirmerPayout= this.roundMoney(contractAmount * (this.parseValue(data.confirmerPercent)/100));
+          const elisoPayout= this.roundMoney(contractAmount * (this.parseValue(data.elisoPercent)/100));
+          const prodMSPayout= this.roundMoney(this.parseValue(data.prodMSAmount) * (this.parseValue(data.prodMSPercent)/100));
+          const prodRSPayout= this.roundMoney(this.parseValue(data.prodRSAmount) * (this.parseValue(data.prodRSPercent)/100));
+          const prodNCPayout= this.roundMoney(this.parseValue(data.prodNCAmount) * (this.parseValue(data.prodNCPercent)/100));
+          const prodABEPayout= this.roundMoney(this.parseValue(data.prodABEAmount) * (this.parseValue(data.prodABEPercent)/100));
+
+          const additionalTeamPayout= this.roundMoney(canvasserPayout + confirmerPayout + elisoPayout + prodMSPayout + prodRSPayout + prodNCPayout + prodABEPayout);
+          const totalTeamPayout= this.roundMoney(altaCalTotalPayout + additionalTeamPayout);
+          const finalProfit= this.roundMoney(preliminaryProfit - additionalTeamPayout);
+          const finalProfitPercent= totalAfterFees>0 ? (finalProfit/totalAfterFees)*100 : 0;
+
+          return {
+            contractAmount, netAmount, fees, feePercent, houseFeeAmount, houseFeePercent, totalAfterFees,
+            totalJobCost, profitPercent, vetRate, repRate, finalPerVetPayout, finalPerRepPayout,
+            finalTotalVetsPayout, finalTotalRepsPayout, totalRideAlongPayout, altaCalTotalPayout,
+            preliminaryProfit, canvasserPayout, confirmerPayout, elisoPayout, prodMSPayout, prodRSPayout,
+            prodNCPayout, prodABEPayout, additionalTeamPayout, totalTeamPayout, finalProfit, finalProfitPercent,
+            vetsCount, repsCount, numRideAlongs, totalCollected: netAmount,
+            parGuttersAmount, parInsulationAmount, parCoatingAmount, perRideAlongPayout, rideAlongFeePerPerson
+          };
+        },
+
+        addCalculator(){
+          const calc = {
+            id:this.nextId++,
+            customerName:'', jobNumber:'', contractAmount:'', netAmount:'', houseFeePercent:'', moneyInBank:'',
+            numVets:'', numReps:'', numRideAlongs:'', rideAlong:'', rideAlongBonus:'',
+            guttersLF:'', woodLF:'', insulationSF:'', insulationWoodLF:'',
+            activePARs: [],
+            parAddOns: [],
+            parInsulationAddOns: [],
+            parCoatingProducts: [],
+            canvasserPercent:'2', confirmerPercent:'0.25', elisoPercent:'1.5',
+            prodMSPercent:'0.25', prodMSAmount:'', prodRSPercent:'0.25', prodRSAmount:'',
+            prodNCPercent:'0.25', prodNCAmount:'', prodABEPercent:'0.25', prodABEAmount:'',
+            invoiceRows: Array(15).fill(null).map(() => ({ company:'', cost:'', paid:false })),
+            vetNames: [],
+            repNames: [],
+            rideAlongNames: []
+          };
+          this.calculators.push(calc);
+          this.renderAll();
+        },
+        
+        deleteCalculator(id){
+          if(this.calculators.length<=1){ alert('Cannot delete the last calculator'); return; }
+          if(confirm('Delete this calculator?')){ this.calculators = this.calculators.filter(c=>c.id!==id); this.renderAll(); }
+        },
+        
+        updateField(id, field, value){
+          const calc=this.calculators.find(c=>c.id===id); if(!calc) return;
+          calc[field]=value;
+          if(field==='contractAmount') calc.houseFeePercent=this.getHouseFeePercent(value);
+          
+          // If changing number of people, need to re-render to show/hide name fields
+          if(field === 'numVets' || field === 'numReps' || field === 'numRideAlongs'){
+            this.renderAll();
+          } else {
+            this.updateDisplaysOnly(id);
+            this.updateSummary();
+          }
+        },
+
+        updateInvoiceRow(calcId, rowIndex, field, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.invoiceRows[rowIndex]) return;
+          calc.invoiceRows[rowIndex][field] = value;
+          this.calculateFileInvoice(calcId);
+        },
+
+        addInvoiceRowToFile(calcId){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          calc.invoiceRows.push({ company:'', cost:'', paid:false });
+          this.renderAll();
+        },
+
+        calculateFileInvoice(calcId){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          this.updateDisplaysOnly(calcId);
+          this.updateSummary();
+        },
+        
+        togglePAR(calcId, parType){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          
+          if(!calc.activePARs) calc.activePARs = [];
+          
+          const index = calc.activePARs.indexOf(parType);
+          if(index > -1){
+            calc.activePARs.splice(index, 1);
+          } else {
+            calc.activePARs.push(parType);
+          }
+          
+          this.renderAll();
+        },
+        
+        addParAddOn(calcId){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          if(!calc.parAddOns) calc.parAddOns = [];
+          calc.parAddOns.push({ description:'', lf:'', rate:'', rateType:'lf' });
+          this.renderAll();
+        },
+        
+        removeParAddOn(calcId, index){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.parAddOns) return;
+          calc.parAddOns.splice(index, 1);
+          this.renderAll();
+        },
+        
+        updateParAddOn(calcId, index, field, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.parAddOns || !calc.parAddOns[index]) return;
+          calc.parAddOns[index][field] = value;
+          this.updateDisplaysOnly(calcId);
+        },
+        
+        addParInsulationAddOn(calcId){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          if(!calc.parInsulationAddOns) calc.parInsulationAddOns = [];
+          calc.parInsulationAddOns.push({ description:'', lf:'', rate:'', rateType:'lf' });
+          this.renderAll();
+        },
+        
+        removeParInsulationAddOn(calcId, index){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.parInsulationAddOns) return;
+          calc.parInsulationAddOns.splice(index, 1);
+          this.renderAll();
+        },
+        
+        updateParInsulationAddOn(calcId, index, field, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.parInsulationAddOns || !calc.parInsulationAddOns[index]) return;
+          calc.parInsulationAddOns[index][field] = value;
+          this.updateDisplaysOnly(calcId);
+        },
+        
+        addParCoatingProduct(calcId){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          if(!calc.parCoatingProducts) calc.parCoatingProducts = [];
+          calc.parCoatingProducts.push({ product:'', quantity:'', basePrice:'', totalCost:'', payout:'' });
+          this.renderAll();
+        },
+        
+        removeParCoatingProduct(calcId, index){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.parCoatingProducts) return;
+          calc.parCoatingProducts.splice(index, 1);
+          this.renderAll();
+        },
+        
+        updateParCoatingProduct(calcId, index, field, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc || !calc.parCoatingProducts || !calc.parCoatingProducts[index]) return;
+          calc.parCoatingProducts[index][field] = value;
+          
+          // If product changed, auto-fill the basePrice from the product code
+          if(field === 'product' && value && value !== 'custom|0'){
+            const [productKey, price] = value.split('|');
+            if(price){
+              calc.parCoatingProducts[index].basePrice = price;
+            }
+          }
+          
+          // Always re-render to update row calculations
+          this.renderAll();
+        },
+        
+        handleNameSelectChange(selectElement, calcId, index, type){
+          const customInput = selectElement.nextElementSibling;
+          
+          if(selectElement.value === '__custom__'){
+            // Hide dropdown, show custom input
+            selectElement.style.display = 'none';
+            customInput.style.display = 'block';
+            customInput.focus();
+            // Clear the stored name so user can enter new one
+            if(type === 'vet') this.updateVetName(calcId, index, '');
+            else if(type === 'rep') this.updateRepName(calcId, index, '');
+            else if(type === 'rideAlong') this.updateRideAlongName(calcId, index, '');
+          } else {
+            // User selected a saved name
+            if(type === 'vet') this.updateVetName(calcId, index, selectElement.value);
+            else if(type === 'rep') this.updateRepName(calcId, index, selectElement.value);
+            else if(type === 'rideAlong') this.updateRideAlongName(calcId, index, selectElement.value);
+          }
+        },
+        
+        updateVetName(calcId, index, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          if(!calc.vetNames) calc.vetNames = [];
+          calc.vetNames[index] = value;
+        },
+        
+        updateRepName(calcId, index, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          if(!calc.repNames) calc.repNames = [];
+          calc.repNames[index] = value;
+        },
+        
+        updateRideAlongName(calcId, index, value){
+          const calc = this.calculators.find(c => c.id === calcId);
+          if(!calc) return;
+          if(!calc.rideAlongNames) calc.rideAlongNames = [];
+          calc.rideAlongNames[index] = value;
+        },
+        
+        openManageNamesModal(){
+          document.getElementById('manageNamesModal').classList.add('active');
+          this.renderAllNameLists();
+        },
+        
+        closeManageNamesModal(){
+          document.getElementById('manageNamesModal').classList.remove('active');
+        },
+        
+        switchNamesTab(tabName){
+          // Update tab buttons
+          document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+          event.target.classList.add('active');
+          
+          // Update tab content
+          document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+          document.getElementById(tabName + 'Tab').classList.add('active');
+        },
+        
+        addNameToList(type){
+          let inputId, listKey;
+          if(type === 'vets'){ inputId = 'newVetName'; listKey = 'vets'; }
+          else if(type === 'reps'){ inputId = 'newRepName'; listKey = 'reps'; }
+          else if(type === 'rideAlongs'){ inputId = 'newRideAlongName'; listKey = 'rideAlongs'; }
+          
+          const input = document.getElementById(inputId);
+          const name = input.value.trim();
+          
+          if(name && !this.savedNames[listKey].includes(name)){
+            this.savedNames[listKey].push(name);
+            this.savedNames[listKey].sort();
+            this.saveSavedNames();
+            this.renderNameList(listKey);
+            this.renderAll(); // Re-render calculators to update dropdowns
+            input.value = '';
+          }
+        },
+        
+        deleteNameFromList(type, name){
+          if(confirm(`Delete "${name}" from the list?`)){
+            this.savedNames[type] = this.savedNames[type].filter(n => n !== name);
+            this.saveSavedNames();
+            this.renderNameList(type);
+            this.renderAll(); // Re-render calculators to update dropdowns
+          }
+        },
+        
+        renderNameList(type){
+          let listId;
+          if(type === 'vets') listId = 'vetsList';
+          else if(type === 'reps') listId = 'repsList';
+          else if(type === 'rideAlongs') listId = 'rideAlongsList';
+          
+          const container = document.getElementById(listId);
+          
+          if(this.savedNames[type].length === 0){
+            container.innerHTML = '<div class="empty-state">No names saved yet. Add your first name above!</div>';
+            return;
+          }
+          
+          container.innerHTML = this.savedNames[type].map(name => `
+            <div class="name-item">
+              <span>${this.escape(name)}</span>
+              <button class="delete-name-btn" onclick="app.deleteNameFromList('${type}', '${this.escape(name)}')">✕ Delete</button>
+            </div>
+          `).join('');
+        },
+        
+        renderAllNameLists(){
+          this.renderNameList('vets');
+          this.renderNameList('reps');
+          this.renderNameList('rideAlongs');
+        },
+
+        updateDisplaysOnly(calcId){
+          const calc=this.calculators.find(c=>c.id===calcId); if(!calc) return;
+          const data=this.calculateOne(calc);
+          
+          // Update all data-field elements
+          document.querySelectorAll(`[data-calc-id="${calcId}"]`).forEach(el=>{
+            const field=el.getAttribute('data-field'); if(!field) return;
+            const v=data[field]; 
+            if(el.tagName === 'INPUT'){
+              el.value = typeof v==='number' ? v : String(v ?? '');
+            } else {
+              el.textContent = typeof v==='number' ? this.fmt(v) : String(v ?? '');
+            }
+          });
+          
+          const houseFeeInput=document.querySelector(`input[data-calc-id="${calcId}"][data-field="houseFeePercent"]`);
+          if(houseFeeInput) houseFeeInput.value=calc.houseFeePercent;
+
+          // Update tier section
+          const tierSection=document.getElementById(`tier-section-${calcId}`); 
+          if(tierSection){
+            if (data.vetsCount>0 || data.repsCount>0){
+              tierSection.style.display='block';
+              const tierInfo=document.getElementById(`tier-info-${calcId}`);
+              if(tierInfo) tierInfo.textContent = `Profit: ${data.profitPercent.toFixed(1)}% → Vet: ${data.vetRate}% | Rep: ${data.repRate}%`;
+
+              const vetsBox=document.getElementById(`vets-box-${calcId}`);
+              if(vetsBox){
+                if(data.vetsCount>0){
+                  vetsBox.style.display='block';
+                  vetsBox.innerHTML=`
+                    <div style="font-weight:700;text-align:center;margin-bottom:8px;">VETS: ${data.vetsCount}</div>
+                    <div class="tier-box light"><div class="tier-label">Per Vet</div><div class="tier-value" style="color:#2E7D32;">${this.fmt(data.finalPerVetPayout)}</div></div>
+                    <div class="tier-box bold"><div class="tier-label">Total Vets</div><div class="tier-value" style="color:#1B5E20;">${this.fmt(data.finalTotalVetsPayout)}</div></div>
+                  `;
+                } else { vetsBox.style.display='none'; }
+              }
+              
+              const repsBox=document.getElementById(`reps-box-${calcId}`);
+              if(repsBox){
+                if(data.repsCount>0){
+                  repsBox.style.display='block';
+                  repsBox.innerHTML=`
+                    <div style="font-weight:700;text-align:center;margin-bottom:8px;">REPS: ${data.repsCount}</div>
+                    <div class="tier-box purple-light"><div class="tier-label">Per Rep</div><div class="tier-value" style="color:#6A1B9A;">${this.fmt(data.finalPerRepPayout)}</div></div>
+                    <div class="tier-box purple-bold"><div class="tier-label">Total Reps</div><div class="tier-value" style="color:#4A148C;">${this.fmt(data.finalTotalRepsPayout)}</div></div>
+                  `;
+                } else { repsBox.style.display='none'; }
+              }
+            } else {
+              tierSection.style.display='none';
+            }
+          }
+        },
+
+        renderAll(){
+          const container=document.getElementById('calculators');
+          if(!container){ window.__showErr && window.__showErr('#calculators not found'); return; }
+          container.innerHTML=this.calculators.map((calc,index)=>this.renderCalculator(calc,index)).join('');
+          this.updateSummary();
+        },
+
+        renderCalculator(calc, index){
+          const data=this.calculateOne(calc);
+          const deleteBtn=this.calculators.length>1 ? `<button class="delete-btn no-print" onclick="app.deleteCalculator(${calc.id})">×</button>` : '';
+          const showTiers = data.vetsCount>0 || data.repsCount>0;
+          
+          // Build PAR add-ons HTML for gutters
+          let parAddOnsHTML = '';
+          if(calc.parAddOns && calc.parAddOns.length > 0){
+            calc.parAddOns.forEach((addon, idx) => {
+              parAddOnsHTML += `
+                <div class="par-addon-row">
+                  <input type="text" value="${addon.description || ''}" placeholder="Description" oninput="app.updateParAddOn(${calc.id}, ${idx}, 'description', this.value)">
+                  <input type="number" step="0.01" value="${addon.lf || ''}" placeholder="LF/SF" inputmode="decimal" onchange="app.updateParAddOn(${calc.id}, ${idx}, 'lf', this.value)" onkeypress="if(event.key==='Enter') app.updateParAddOn(${calc.id}, ${idx}, 'lf', this.value)">
+                  <input type="number" step="0.01" value="${addon.rate || ''}" placeholder="Rate" inputmode="decimal" onchange="app.updateParAddOn(${calc.id}, ${idx}, 'rate', this.value)" onkeypress="if(event.key==='Enter') app.updateParAddOn(${calc.id}, ${idx}, 'rate', this.value)">
+                  <select onchange="app.updateParAddOn(${calc.id}, ${idx}, 'rateType', this.value)">
+                    <option value="lf" ${addon.rateType === 'lf' ? 'selected' : ''}>$/LF</option>
+                    <option value="sf" ${addon.rateType === 'sf' ? 'selected' : ''}>$/SF</option>
+                  </select>
+                  <button class="remove-btn" onclick="app.removeParAddOn(${calc.id}, ${idx})">×</button>
+                </div>
+              `;
+            });
+          }
+          
+          // Build PAR add-ons HTML for insulation
+          let parInsulationAddOnsHTML = '';
+          if(calc.parInsulationAddOns && calc.parInsulationAddOns.length > 0){
+            calc.parInsulationAddOns.forEach((addon, idx) => {
+              parInsulationAddOnsHTML += `
+                <div class="par-addon-row">
+                  <input type="text" value="${addon.description || ''}" placeholder="Description" oninput="app.updateParInsulationAddOn(${calc.id}, ${idx}, 'description', this.value)">
+                  <input type="number" step="0.01" value="${addon.lf || ''}" placeholder="LF/SF" inputmode="decimal" onchange="app.updateParInsulationAddOn(${calc.id}, ${idx}, 'lf', this.value)" onkeypress="if(event.key==='Enter') app.updateParInsulationAddOn(${calc.id}, ${idx}, 'lf', this.value)">
+                  <input type="number" step="0.01" value="${addon.rate || ''}" placeholder="Rate" inputmode="decimal" onchange="app.updateParInsulationAddOn(${calc.id}, ${idx}, 'rate', this.value)" onkeypress="if(event.key==='Enter') app.updateParInsulationAddOn(${calc.id}, ${idx}, 'rate', this.value)">
+                  <select onchange="app.updateParInsulationAddOn(${calc.id}, ${idx}, 'rateType', this.value)">
+                    <option value="lf" ${addon.rateType === 'lf' ? 'selected' : ''}>$/LF</option>
+                    <option value="sf" ${addon.rateType === 'sf' ? 'selected' : ''}>$/SF</option>
+                  </select>
+                  <button class="remove-btn" onclick="app.removeParInsulationAddOn(${calc.id}, ${idx})">×</button>
+                </div>
+              `;
+            });
+          }
+          
+          // Build PAR coating products HTML
+          let parCoatingProductsHTML = '';
+          if(calc.parCoatingProducts && calc.parCoatingProducts.length > 0){
+            calc.parCoatingProducts.forEach((product, idx) => {
+              const totalCost = product.quantity && product.basePrice ? this.roundMoney(this.parseValue(product.quantity) * this.parseValue(product.basePrice)) : 0;
+              parCoatingProductsHTML += `
+                <div class="par-coating-row">
+                  <select onchange="app.updateParCoatingProduct(${calc.id}, ${idx}, 'product', this.value)">
+                    <option value="">Select Product</option>
+                    <option value="square_count|675" ${product.product === 'square_count|675' ? 'selected' : ''}>Square Count - $675/sq</option>
+                    <option value="windows|215" ${product.product === 'windows|215' ? 'selected' : ''}>Windows/Reglaze/Paint (Wood/Steel) - $215 ea</option>
+                    <option value="security_door|375" ${product.product === 'security_door|375' ? 'selected' : ''}>Security Door - $375 ea</option>
+                    <option value="burglar_bars|200" ${product.product === 'burglar_bars|200' ? 'selected' : ''}>Burglar Bars - $200 ea</option>
+                    <option value="awning_under3|250" ${product.product === 'awning_under3|250' ? 'selected' : ''}>Metal Awning Under 3 feet - $250 ea</option>
+                    <option value="awning_over3|325" ${product.product === 'awning_over3|325' ? 'selected' : ''}>Metal Awning Over 3 feet - $325 ea</option>
+                    <option value="spanish_lace|245" ${product.product === 'spanish_lace|245' ? 'selected' : ''}>Spanish Lace - $245/sq</option>
+                    <option value="wood_replacement|17" ${product.product === 'wood_replacement|17' ? 'selected' : ''}>Wood Replacement (eave/fascia) - $17/ln ft</option>
+                    <option value="wood_repairs|750" ${product.product === 'wood_repairs|750' ? 'selected' : ''}>Wood Repairs (siding) - $750/sq</option>
+                    <option value="wood_siding|350" ${product.product === 'wood_siding|350' ? 'selected' : ''}>Wood Siding/Eave strip bare wood - $350/sq</option>
+                    <option value="one_float|200" ${product.product === 'one_float|200' ? 'selected' : ''}>One Float - $200/sq</option>
+                    <option value="two_float|450" ${product.product === 'two_float|450' ? 'selected' : ''}>Two Float - $450/sq</option>
+                    <option value="lath_paper|1250" ${product.product === 'lath_paper|1250' ? 'selected' : ''}>Lath paper three float - $1,250/sq</option>
+                    <option value="structural_crack|225" ${product.product === 'structural_crack|225' ? 'selected' : ''}>Structural crack - $225 ea</option>
+                    <option value="remove_patio|250" ${product.product === 'remove_patio|250' ? 'selected' : ''}>Remove & haul away patio overhang - $250</option>
+                    <option value="door|250" ${product.product === 'door|250' ? 'selected' : ''}>Door - $250 ea</option>
+                    <option value="custom|0" ${product.product === 'custom|0' ? 'selected' : ''}>ADDITIONAL CHARGE (Custom)</option>
+                  </select>
+                  <input type="number" step="1" value="${product.quantity || ''}" placeholder="Qty" inputmode="numeric" onchange="app.updateParCoatingProduct(${calc.id}, ${idx}, 'quantity', this.value)" onkeypress="if(event.key==='Enter') app.updateParCoatingProduct(${calc.id}, ${idx}, 'quantity', this.value)">
+                  ${product.product === 'custom|0' ? 
+                    `<input type="number" step="0.01" value="${product.basePrice || ''}" placeholder="Rate $" inputmode="decimal" onchange="app.updateParCoatingProduct(${calc.id}, ${idx}, 'basePrice', this.value)" onkeypress="if(event.key==='Enter') app.updateParCoatingProduct(${calc.id}, ${idx}, 'basePrice', this.value)">` :
+                    `<input type="text" value="${product.basePrice ? '$' + this.parseValue(product.basePrice).toFixed(2) : ''}" placeholder="Rate" readonly style="background:#f0f0f0;" onfocus="this.blur()">`
+                  }
+                  <div class="calc-display">${this.fmt(totalCost)}</div>
+                  <button class="remove-btn" onclick="app.removeParCoatingProduct(${calc.id}, ${idx})">×</button>
+                </div>
+              `;
+            });
+          }
+          
+          // Generate vet names list with dropdowns
+          let vetNamesHTML = '';
+          if(data.vetsCount > 0){
+            vetNamesHTML = '<div class="payout-label">VET PAYOUTS</div>';
+            for(let i = 0; i < data.vetsCount; i++){
+              const currentName = calc.vetNames && calc.vetNames[i] ? calc.vetNames[i] : '';
+              const isCustom = currentName && !this.savedNames.vets.includes(currentName);
+              
+              vetNamesHTML += `
+                <div class="name-row">
+                  <div style="flex:1;">
+                    <select class="name-select" onchange="app.handleNameSelectChange(this, ${calc.id}, ${i}, 'vet')" style="display:${isCustom ? 'none' : 'block'}">
+                      <option value="">Select Vet...</option>
+                      ${this.savedNames.vets.map(name => 
+                        `<option value="${this.escape(name)}" ${currentName === name ? 'selected' : ''}>${this.escape(name)}</option>`
+                      ).join('')}
+                      <option value="__custom__">➕ Custom Name...</option>
+                    </select>
+                    <input type="text" class="name-input" value="${this.escape(currentName)}" placeholder="Enter name" oninput="app.updateVetName(${calc.id}, ${i}, this.value)" style="display:${isCustom ? 'block' : 'none'};">
+                  </div>
+                  <div class="name-amount">${this.fmt(data.finalPerVetPayout)}</div>
+                </div>
+              `;
+            }
+          }
+          
+          // Generate rep names list with dropdowns
+          let repNamesHTML = '';
+          if(data.repsCount > 0){
+            repNamesHTML = '<div class="payout-label">REP PAYOUTS</div>';
+            for(let i = 0; i < data.repsCount; i++){
+              const currentName = calc.repNames && calc.repNames[i] ? calc.repNames[i] : '';
+              const isCustom = currentName && !this.savedNames.reps.includes(currentName);
+              
+              repNamesHTML += `
+                <div class="name-row">
+                  <div style="flex:1;">
+                    <select class="name-select" onchange="app.handleNameSelectChange(this, ${calc.id}, ${i}, 'rep')" style="display:${isCustom ? 'none' : 'block'}">
+                      <option value="">Select Rep...</option>
+                      ${this.savedNames.reps.map(name => 
+                        `<option value="${this.escape(name)}" ${currentName === name ? 'selected' : ''}>${this.escape(name)}</option>`
+                      ).join('')}
+                      <option value="__custom__">➕ Custom Name...</option>
+                    </select>
+                    <input type="text" class="name-input" value="${this.escape(currentName)}" placeholder="Enter name" oninput="app.updateRepName(${calc.id}, ${i}, this.value)" style="display:${isCustom ? 'block' : 'none'};">
+                  </div>
+                  <div class="name-amount">${this.fmt(data.finalPerRepPayout)}</div>
+                </div>
+              `;
+            }
+          }
+          
+          // Generate ride along names list with dropdowns
+          let rideAlongNamesHTML = '';
+          if(data.numRideAlongs > 0){
+            rideAlongNamesHTML = '<div class="payout-label">RIDE ALONG PAYOUTS</div>';
+            for(let i = 0; i < data.numRideAlongs; i++){
+              const currentName = calc.rideAlongNames && calc.rideAlongNames[i] ? calc.rideAlongNames[i] : '';
+              const isCustom = currentName && !this.savedNames.rideAlongs.includes(currentName);
+              
+              rideAlongNamesHTML += `
+                <div class="name-row">
+                  <div style="flex:1;">
+                    <select class="name-select" onchange="app.handleNameSelectChange(this, ${calc.id}, ${i}, 'rideAlong')" style="display:${isCustom ? 'none' : 'block'}">
+                      <option value="">Select Ride Along...</option>
+                      ${this.savedNames.rideAlongs.map(name => 
+                        `<option value="${this.escape(name)}" ${currentName === name ? 'selected' : ''}>${this.escape(name)}</option>`
+                      ).join('')}
+                      <option value="__custom__">➕ Custom Name...</option>
+                    </select>
+                    <input type="text" class="name-input" value="${this.escape(currentName)}" placeholder="Enter name" oninput="app.updateRideAlongName(${calc.id}, ${i}, this.value)" style="display:${isCustom ? 'block' : 'none'};">
+                  </div>
+                  <div class="name-amount">${this.fmt(data.perRideAlongPayout)}</div>
+                </div>
+              `;
+            }
+          }
+          
+          const activePARs = new Set(calc.activePARs || []);
+          
+          return `
+            <div class="calculator">
+              ${deleteBtn}
+              <div class="calc-header">
+                <h2 style="font-size:18px;font-weight:700;">FILE #${index + 1}</h2>
+                <button class="btn btn-blue no-print" onclick="app.printSingle(${index})" style="padding:10px 16px;">🖨️</button>
+              </div>
+              
+              <div class="invoice-sheet" style="margin:20px;">
+                <div class="invoice-header">📋 INVOICE SHEET - FILE #${index + 1}</div>
+                
+                <!-- Top Section from NOV19C -->
+                <div class="top-section">
+                  <div class="header-box">
+                    <div class="header-row" style="grid-template-columns: 1fr;">
+                      <div class="field">
+                        <label>CUSTOMER NAME</label>
+                        <input type="text" value="${calc.customerName || ''}" oninput="app.updateField(${calc.id}, 'customerName', this.value)">
+                      </div>
+                    </div>
+                    <div class="header-row">
+                      <div class="field">
+                        <label>JOB NUMBER</label>
+                        <input type="text" value="${calc.jobNumber || ''}" oninput="app.updateField(${calc.id}, 'jobNumber', this.value)">
+                      </div>
+                      <div class="field">
+                        <label>FULL AMOUNT OF MONEY IN BANK DATE</label>
+                        <input type="date" value="${calc.moneyInBank || ''}" onchange="app.updateField(${calc.id}, 'moneyInBank', this.value)">
+                      </div>
+                    </div>
+                    <div class="header-row">
+                      <div class="field">
+                        <label>CONTRACT AMOUNT</label>
+                        <input type="number" step="0.01" value="${calc.contractAmount || ''}" inputmode="decimal" oninput="app.updateField(${calc.id}, 'contractAmount', this.value)">
+                      </div>
+                      <div class="field">
+                        <label>NET AMOUNT</label>
+                        <input type="number" step="0.01" value="${calc.netAmount || ''}" inputmode="decimal" oninput="app.updateField(${calc.id}, 'netAmount', this.value)">
+                      </div>
+                    </div>
+                    <div class="header-row">
+                      <div class="field">
+                        <label style="font-size:12px;font-weight:900;color:#E65100;">📅 DROP DAY/DATE</label>
+                        <input type="date" value="${calc.dropDay || ''}" onchange="app.updateField(${calc.id}, 'dropDay', this.value)" style="border:3px solid #E65100;background:#fff3e0;">
+                      </div>
+                      <div class="field">
+                        <label style="font-size:12px;font-weight:900;color:#4CAF50;">💰 AMOUNT RECEIVED (On This Drop Day)</label>
+                        <input type="number" step="0.01" value="${calc.dropAmount || ''}" inputmode="decimal" oninput="app.updateField(${calc.id}, 'dropAmount', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'dropAmount', this.value)" style="border:3px solid #4CAF50;background:#e8f5e9;">
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="header-box">
+                    <div class="calc-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                      <div class="calc-box warning">
+                        <div class="calc-label">HOUSE FEE %</div>
+                        <div class="calc-value">${calc.houseFeePercent || 0}%</div>
+                      </div>
+                      <div class="calc-box info">
+                        <div class="calc-label">TOTAL JOB COST</div>
+                        <div class="calc-value" data-calc-id="${calc.id}" data-field="totalJobCost">${this.fmt(data.totalJobCost)}</div>
+                      </div>
+                      <div class="calc-box info">
+                        <div class="calc-label">AFTER FEES</div>
+                        <div class="calc-value" data-calc-id="${calc.id}" data-field="totalAfterFees">${this.fmt(data.totalAfterFees)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Main Grid from NOV19C -->
+                <div class="main-grid">
+                  <div class="left-side">
+                    <!-- Invoice Items Table -->
+                    <div class="section">
+                      <div class="section-title">INVOICE ITEMS</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th style="width: 50%;">LABOR & MATERIAL</th>
+                            <th style="width: 30%;">COST</th>
+                            <th style="width: 20%;">PAID</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${calc.invoiceRows.map((row, rowIdx) => `
+                            <tr>
+                              <td><input type="text" value="${row.company || ''}" oninput="app.updateInvoiceRow(${calc.id}, ${rowIdx}, 'company', this.value)" autocomplete="off"></td>
+                              <td><input type="number" step="0.01" value="${row.cost || ''}" inputmode="decimal" onchange="app.updateInvoiceRow(${calc.id}, ${rowIdx}, 'cost', this.value)" onkeypress="if(event.key==='Enter') app.updateInvoiceRow(${calc.id}, ${rowIdx}, 'cost', this.value)"></td>
+                              <td style="text-align:center;"><input type="checkbox" ${row.paid ? 'checked' : ''} onchange="app.updateInvoiceRow(${calc.id}, ${rowIdx}, 'paid', this.checked)"></td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                      <button class="add-btn" onclick="app.addInvoiceRowToFile(${calc.id})">+ ADD ROW</button>
+                    </div>
+                    
+                    <!-- Fees & Bonuses -->
+                    <div class="section">
+                      <div class="section-title">FEES & BONUSES</div>
+                      <div class="input-grid">
+                        <div class="field">
+                          <label>RIDE ALONG FEE/ADDITIONAL FEES</label>
+                          <input type="number" step="0.01" value="${calc.rideAlong || ''}" inputmode="decimal" oninput="app.updateField(${calc.id}, 'rideAlong', this.value)">
+                        </div>
+                        <div class="field">
+                          <label>RIDE ALONG BONUS</label>
+                          <input type="number" step="0.01" value="${calc.rideAlongBonus || ''}" inputmode="decimal" oninput="app.updateField(${calc.id}, 'rideAlongBonus', this.value)">
+                        </div>
+                        <div class="calc-box">
+                          <div class="calc-label">FEE PER PERSON</div>
+                          <div class="calc-value" data-calc-id="${calc.id}" data-field="rideAlongFeePerPerson">${this.fmt(data.rideAlongFeePerPerson)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="right-side">
+                    <!-- VETS Section -->
+                    <div class="section">
+                      <div class="section-title">PROJECTED VET PAYOUTS</div>
+                      <div class="input-grid">
+                        <div class="field">
+                          <label>NUMBER OF VETS</label>
+                          <input type="number" step="1" value="${calc.numVets || ''}" inputmode="numeric" onchange="app.updateField(${calc.id}, 'numVets', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'numVets', this.value)">
+                        </div>
+                        ${data.vetsCount > 0 ? `
+                          <div class="calc-box warning">
+                            <div class="calc-label">RATE</div>
+                            <div class="calc-value">${data.vetRate}%</div>
+                          </div>
+                          <div class="calc-box highlight">
+                            <div class="calc-label">PER VET</div>
+                            <div class="calc-value">${this.fmt(data.finalPerVetPayout)}</div>
+                          </div>
+                        ` : ''}
+                      </div>
+                      <div class="name-list">${vetNamesHTML}</div>
+                    </div>
+                    
+                    <!-- REPS Section -->
+                    <div class="section">
+                      <div class="section-title">PROJECTED REP PAYOUTS</div>
+                      
+                      <div style="background: #fff3e0; border: 2px solid #FF9800; padding: 8px; margin-bottom: 12px; font-size: 11px; text-align: center; font-weight: bold; color: #F57C00;">
+                        💡 TIP: You can select MULTIPLE PAR types (e.g., Gutters + Insulation). Net amount will be divided automatically!
+                      </div>
+                      
+                      <!-- PAR Buttons -->
+                      <div class="par-buttons">
+                        <button class="par-btn ${calc.activePARs && calc.activePARs.includes('gutters') ? 'active' : ''}" onclick="app.togglePAR(${calc.id}, 'gutters')">PAR GUTTERS</button>
+                        <button class="par-btn ${calc.activePARs && calc.activePARs.includes('insulation') ? 'active' : ''}" onclick="app.togglePAR(${calc.id}, 'insulation')">PAR INSULATION</button>
+                        <button class="par-btn ${calc.activePARs && calc.activePARs.includes('coating') ? 'active' : ''}" onclick="app.togglePAR(${calc.id}, 'coating')">PAR COATING</button>
+                      </div>
+                      
+                      <!-- PAR Gutters Fields -->
+                      <div class="par-fields ${calc.activePARs && calc.activePARs.includes('gutters') ? 'active' : ''}">
+                        <div class="par-fields-title">PAR GUTTERS CALCULATION</div>
+                        <div class="par-input-grid">
+                          <div class="field">
+                            <label>GUTTERS (Linear Feet) @ $27/lf</label>
+                            <input type="number" step="0.01" value="${calc.guttersLF || ''}" inputmode="decimal" onchange="app.updateField(${calc.id}, 'guttersLF', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'guttersLF', this.value)">
+                          </div>
+                          <div class="field">
+                            <label>ADDITIONAL WOOD (Linear Feet) @ $17/lf</label>
+                            <input type="number" step="0.01" value="${calc.woodLF || ''}" inputmode="decimal" onchange="app.updateField(${calc.id}, 'woodLF', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'woodLF', this.value)">
+                          </div>
+                        </div>
+                        
+                        <div style="margin-top: 12px;">
+                          ${parAddOnsHTML ? `<div style="font-weight: bold; font-size: 11px; margin-bottom: 8px; color: #FF9800;">PAR ADD-ONS</div>` : ''}
+                          ${parAddOnsHTML}
+                          <button class="add-btn" onclick="app.addParAddOn(${calc.id})">+ ADD PAR LINE ITEM</button>
+                        </div>
+                        
+                        <div class="calc-box warning" style="margin-top: 12px;">
+                          <div class="calc-label">TOTAL PAR AMOUNT</div>
+                          <div class="calc-value" data-calc-id="${calc.id}" data-field="parGuttersAmount">${this.fmt(data.parGuttersAmount)}</div>
+                        </div>
+                      </div>
+                      
+                      <!-- PAR Insulation Fields -->
+                      <div class="par-fields ${calc.activePARs && calc.activePARs.includes('insulation') ? 'active' : ''}">
+                        <div class="par-fields-title">PAR INSULATION CALCULATION</div>
+                        <div class="par-input-grid">
+                          <div class="field">
+                            <label>INSULATION (Square Feet) @ $4/sf</label>
+                            <input type="number" step="0.01" value="${calc.insulationSF || ''}" inputmode="decimal" onchange="app.updateField(${calc.id}, 'insulationSF', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'insulationSF', this.value)">
+                          </div>
+                          <div class="field">
+                            <label>ADDITIONAL WOOD (Linear Feet) @ $17/lf</label>
+                            <input type="number" step="0.01" value="${calc.insulationWoodLF || ''}" inputmode="decimal" onchange="app.updateField(${calc.id}, 'insulationWoodLF', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'insulationWoodLF', this.value)">
+                          </div>
+                        </div>
+                        
+                        <div style="margin-top: 12px;">
+                          ${parInsulationAddOnsHTML ? `<div style="font-weight: bold; font-size: 11px; margin-bottom: 8px; color: #FF9800;">PAR ADD-ONS</div>` : ''}
+                          ${parInsulationAddOnsHTML}
+                          <button class="add-btn" onclick="app.addParInsulationAddOn(${calc.id})">+ ADD PAR LINE ITEM</button>
+                        </div>
+                        
+                        <div class="calc-box warning" style="margin-top: 12px;">
+                          <div class="calc-label">TOTAL PAR AMOUNT</div>
+                          <div class="calc-value" data-calc-id="${calc.id}" data-field="parInsulationAmount">${this.fmt(data.parInsulationAmount)}</div>
+                        </div>
+                      </div>
+                      
+                      <!-- PAR Coating Fields -->
+                      <div class="par-fields ${calc.activePARs && calc.activePARs.includes('coating') ? 'active' : ''}">
+                        <div class="par-fields-title">PAR COATING CALCULATION</div>
+                        <div style="margin-top: 12px;">
+                          ${parCoatingProductsHTML}
+                          <button class="add-btn" onclick="app.addParCoatingProduct(${calc.id})">+ ADD PRODUCT</button>
+                        </div>
+                        
+                        <div class="calc-box warning" style="margin-top: 12px;">
+                          <div class="calc-label">TOTAL PAR AMOUNT</div>
+                          <div class="calc-value" data-calc-id="${calc.id}" data-field="parCoatingAmount">${this.fmt(data.parCoatingAmount)}</div>
+                        </div>
+                      </div>
+                      
+                      <div class="input-grid" style="grid-template-columns: 1fr 1fr;">
+                        <div class="field">
+                          <label>NUMBER OF REPS</label>
+                          <input type="number" step="1" value="${calc.numReps || ''}" inputmode="numeric" onchange="app.updateField(${calc.id}, 'numReps', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'numReps', this.value)">
+                        </div>
+                        ${data.repsCount > 0 ? `
+                          <div class="calc-box warning">
+                            <div class="calc-label">RATE</div>
+                            <div class="calc-value">${data.repRate}%</div>
+                          </div>
+                        ` : ''}
+                      </div>
+                      <div class="name-list">${repNamesHTML}</div>
+                    </div>
+                    
+                    <!-- RIDE ALONGS Section -->
+                    <div class="section">
+                      <div class="section-title">RIDE ALONG PAYOUTS</div>
+                      <div class="input-grid">
+                        <div class="field">
+                          <label>NUMBER OF RIDE ALONGS</label>
+                          <input type="number" step="1" value="${calc.numRideAlongs || ''}" inputmode="numeric" onchange="app.updateField(${calc.id}, 'numRideAlongs', this.value)" onkeypress="if(event.key==='Enter') app.updateField(${calc.id}, 'numRideAlongs', this.value)">
+                        </div>
+                        ${data.numRideAlongs > 0 ? `
+                          <div class="calc-box highlight">
+                            <div class="calc-label">PER RIDE ALONG</div>
+                            <div class="calc-value" data-calc-id="${calc.id}" data-field="perRideAlongPayout">${this.fmt(data.perRideAlongPayout)}</div>
+                          </div>
+                          <div class="calc-box highlight">
+                            <div class="calc-label">TOTAL RA PAYOUT</div>
+                            <div class="calc-value" data-calc-id="${calc.id}" data-field="totalRideAlongPayout">${this.fmt(data.totalRideAlongPayout)}</div>
+                          </div>
+                        ` : ''}
+                      </div>
+                      <div class="name-list">${rideAlongNamesHTML}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="calc-section">
+                <div class="section" style="border:3px solid #e0e0e0;border-radius:8px;">
+                  <div class="section-header" style="background:#AB47BC;color:#fff;">ADDITIONAL TEAM</div>
+                  <div class="section-content" style="padding:15px;background:#fafafa;">
+                    <div style="text-align:center;padding:12px;background:#E1BEE7;border:2px solid #9C27B0;border-radius:6px;font-weight:700;margin-bottom:12px;">
+                      <div style="font-size:11px;margin-bottom:4px;">ADDITIONAL TEAM TOTAL</div>
+                      <div style="font-size:18px;" data-calc-id="${calc.id}" data-field="additionalTeamPayout">${this.fmt(data.additionalTeamPayout)}</div>
+                    </div>
+                    <div class="form-grid" style="margin-bottom:15px;">
+                      <div class="form-group">
+                        <label>CANVASSER %</label>
+                        <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.canvasserPercent || ''}" oninput="app.updateField(${calc.id}, 'canvasserPercent', this.value)"><span>%</span></div>
+                        <div class="calc-display" data-calc-id="${calc.id}" data-field="canvasserPayout">${this.fmt(data.canvasserPayout)}</div>
+                      </div>
+                      <div class="form-group">
+                        <label>CONFIRMER %</label>
+                        <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.confirmerPercent || ''}" oninput="app.updateField(${calc.id}, 'confirmerPercent', this.value)"><span>%</span></div>
+                        <div class="calc-display" data-calc-id="${calc.id}" data-field="confirmerPayout">${this.fmt(data.confirmerPayout)}</div>
+                      </div>
+                      <div class="form-group">
+                        <label>ELISO %</label>
+                        <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.elisoPercent || ''}" oninput="app.updateField(${calc.id}, 'elisoPercent', this.value)"><span>%</span></div>
+                        <div class="calc-display" data-calc-id="${calc.id}" data-field="elisoPayout">${this.fmt(data.elisoPayout)}</div>
+                      </div>
+                    </div>
+                    
+                    <div style="border:2px solid #9C27B0;border-radius:8px;padding:15px;margin-bottom:10px;background:#F3E5F5;">
+                      <div style="font-weight:700;margin-bottom:10px;color:#6A1B9A;">PROD MS</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div class="form-group">
+                          <label>💰 DOLLAR AMOUNT (Manual Entry)</label>
+                          <div class="input-with-symbol" style="border:3px solid #9C27B0;"><span>$</span><input type="number" step="0.01" value="${calc.prodMSAmount || ''}" oninput="app.updateField(${calc.id}, 'prodMSAmount', this.value)" placeholder="Enter amount" inputmode="decimal"></div>
+                        </div>
+                        <div class="form-group">
+                          <label>% PERCENTAGE</label>
+                          <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.prodMSPercent || ''}" oninput="app.updateField(${calc.id}, 'prodMSPercent', this.value)"><span>%</span></div>
+                          <div class="calc-display" data-calc-id="${calc.id}" data-field="prodMSPayout">${this.fmt(data.prodMSPayout)}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style="border:2px solid #9C27B0;border-radius:8px;padding:15px;margin-bottom:10px;background:#F3E5F5;">
+                      <div style="font-weight:700;margin-bottom:10px;color:#6A1B9A;">PROD RS</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div class="form-group">
+                          <label>💰 DOLLAR AMOUNT (Manual Entry)</label>
+                          <div class="input-with-symbol" style="border:3px solid #9C27B0;"><span>$</span><input type="number" step="0.01" value="${calc.prodRSAmount || ''}" oninput="app.updateField(${calc.id}, 'prodRSAmount', this.value)" placeholder="Enter amount" inputmode="decimal"></div>
+                        </div>
+                        <div class="form-group">
+                          <label>% PERCENTAGE</label>
+                          <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.prodRSPercent || ''}" oninput="app.updateField(${calc.id}, 'prodRSPercent', this.value)"><span>%</span></div>
+                          <div class="calc-display" data-calc-id="${calc.id}" data-field="prodRSPayout">${this.fmt(data.prodRSPayout)}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style="border:2px solid #9C27B0;border-radius:8px;padding:15px;margin-bottom:10px;background:#F3E5F5;">
+                      <div style="font-weight:700;margin-bottom:10px;color:#6A1B9A;">PROD NC</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div class="form-group">
+                          <label>💰 DOLLAR AMOUNT (Manual Entry)</label>
+                          <div class="input-with-symbol" style="border:3px solid #9C27B0;"><span>$</span><input type="number" step="0.01" value="${calc.prodNCAmount || ''}" oninput="app.updateField(${calc.id}, 'prodNCAmount', this.value)" placeholder="Enter amount" inputmode="decimal"></div>
+                        </div>
+                        <div class="form-group">
+                          <label>% PERCENTAGE</label>
+                          <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.prodNCPercent || ''}" oninput="app.updateField(${calc.id}, 'prodNCPercent', this.value)"><span>%</span></div>
+                          <div class="calc-display" data-calc-id="${calc.id}" data-field="prodNCPayout">${this.fmt(data.prodNCPayout)}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style="border:2px solid #9C27B0;border-radius:8px;padding:15px;background:#F3E5F5;">
+                      <div style="font-weight:700;margin-bottom:10px;color:#6A1B9A;">PROD ABE</div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div class="form-group">
+                          <label>💰 DOLLAR AMOUNT (Manual Entry)</label>
+                          <div class="input-with-symbol" style="border:3px solid #9C27B0;"><span>$</span><input type="number" step="0.01" value="${calc.prodABEAmount || ''}" oninput="app.updateField(${calc.id}, 'prodABEAmount', this.value)" placeholder="Enter amount" inputmode="decimal"></div>
+                        </div>
+                        <div class="form-group">
+                          <label>% PERCENTAGE</label>
+                          <div class="input-with-symbol"><input type="number" step="0.01" value="${calc.prodABEPercent || ''}" oninput="app.updateField(${calc.id}, 'prodABEPercent', this.value)"><span>%</span></div>
+                          <div class="calc-display" data-calc-id="${calc.id}" data-field="prodABEPayout">${this.fmt(data.prodABEPayout)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="bottom-totals">
+                  <div class="big-card" style="--c1:#4CAF50;--c2:#45a049;margin-bottom:15px;">
+                    <div class="label">TOTAL TEAM PAYOUT</div>
+                    <div class="value" data-calc-id="${calc.id}" data-field="totalTeamPayout">${this.fmt(data.totalTeamPayout)}</div>
+                  </div>
+                  <div class="big-card" style="--c1:#AB47BC;--c2:#9C27B0;">
+                    <div class="label">FINAL PROFIT</div>
+                    <div class="value" data-calc-id="${calc.id}" data-field="finalProfit">${this.fmt(data.finalProfit)}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        },
+
+        updateSummary(){
+          let grandTotalJobCost = 0;
+          let grandTotalVetPayout = 0;
+          let grandTotalRepPayout = 0;
+          let grandTotalRideAlongPayout = 0;
+          let grandTotalAdditionalTeam = 0;
+          let grandTotalMoneyToReceive = 0;
+          let grandTotalTeamPayout = 0;
+          let grandTotalProfit = 0;
+          
+          this.calculators.forEach(calc => {
+            const data = this.calculateOne(calc);
+            grandTotalJobCost += data.totalJobCost;
+            grandTotalVetPayout += data.finalTotalVetsPayout;
+            grandTotalRepPayout += data.finalTotalRepsPayout;
+            grandTotalRideAlongPayout += data.totalRideAlongPayout;
+            grandTotalAdditionalTeam += data.additionalTeamPayout;
+            grandTotalMoneyToReceive += data.totalCollected;
+            grandTotalTeamPayout += data.totalTeamPayout;
+            grandTotalProfit += data.finalProfit;
+          });
+          
+          const summaryEl = document.getElementById('summaryCards');
+          if(summaryEl){
+            summaryEl.innerHTML = `
+              <div class="summary-card blue">
+                <div class="label">TOTAL JOB COST</div>
+                <div class="value">${this.fmt(grandTotalJobCost)}</div>
+              </div>
+              <div class="summary-card green">
+                <div class="label">TOTAL VETS</div>
+                <div class="value">${this.fmt(grandTotalVetPayout)}</div>
+              </div>
+              <div class="summary-card purple">
+                <div class="label">TOTAL REPS</div>
+                <div class="value">${this.fmt(grandTotalRepPayout)}</div>
+              </div>
+              <div class="summary-card red">
+                <div class="label">TOTAL R/A</div>
+                <div class="value">${this.fmt(grandTotalRideAlongPayout)}</div>
+              </div>
+              <div class="summary-card purple">
+                <div class="label">ADD. TEAM</div>
+                <div class="value">${this.fmt(grandTotalAdditionalTeam)}</div>
+              </div>
+              <div class="summary-card blue">
+                <div class="label">MONEY TO RECEIVE</div>
+                <div class="value">${this.fmt(grandTotalMoneyToReceive)}</div>
+              </div>
+              <div class="summary-card green">
+                <div class="label">TEAM PAYOUT</div>
+                <div class="value">${this.fmt(grandTotalTeamPayout)}</div>
+              </div>
+              <div class="summary-card purple" style="grid-column:span 2;">
+                <div class="label">FINAL PROFIT</div>
+                <div class="value">${this.fmt(grandTotalProfit)}</div>
+              </div>
+            `;
+          }
+        },
+
+        printSingle(index){
+          try{
+            const calc = this.calculators[index];
+            if(!calc){ alert('Calculator not found'); return; }
+            const data = this.calculateOne(calc);
+            
+            const html = buildFilePrintHTML(this, calc, index);
+            
+            document.getElementById('printView').innerHTML = `
+              <div style="padding:10px;font-family:Arial,sans-serif;">
+                <h1 style="text-align:center;color:#1976D2;margin-bottom:20px;">File #${index + 1} - ${this.escape(calc.customerName || 'Untitled')}</h1>
+                <table style="width:100%;border-collapse:collapse;">
+                  <thead>
+                    <tr style="background:linear-gradient(135deg,#42A5F5,#2196F3);color:#fff;">
+                      <th style="padding:12px;text-align:left;">JOB#</th>
+                      <th style="padding:12px;text-align:left;">CUSTOMER</th>
+                      <th style="padding:12px;text-align:right;">JOB COST</th>
+                      <th style="padding:12px;text-align:right;">VET</th>
+                      <th style="padding:12px;text-align:right;">REP</th>
+                      <th style="padding:12px;text-align:right;">R/A</th>
+                      <th style="padding:12px;text-align:right;">ADD TEAM</th>
+                      <th style="padding:12px;text-align:right;">💰 RECEIVE</th>
+                      <th style="padding:12px;text-align:left;">DROP DAY</th>
+                      <th style="padding:12px;text-align:right;">TEAM TOT</th>
+                      <th style="padding:12px;text-align:right;">PROFIT</th>
+                    </tr>
+                  </thead>
+                  <tbody>${html}</tbody>
+                </table>
+              </div>
+            `;
+            document.getElementById('mainView').style.display='none';
+            document.getElementById('printView').style.display='block';
+            setTimeout(()=>{ window.print(); this.closePrint(); }, 100);
+          }catch(e){ window.__showErr && window.__showErr(e.message||String(e)); }
+        },
+
+        showPrintReport(){
+          try{
+            const week = (document.getElementById('collectionWeek')||{}).value || 'Unknown Week';
+            let grandTotalJobCost = 0;
+            let grandTotalVetPayout = 0;
+            let grandTotalRepPayout = 0;
+            let grandTotalRideAlongPayout = 0;
+            let grandTotalAdditionalTeam = 0;
+            let grandTotalMoneyToReceive = 0;
+            let grandTotalTeamPayout = 0;
+            let grandTotalProfit = 0;
+            
+            const sortedCalcs = [...this.calculators].sort((a, b) => {
+              // If both have dropDay, sort by date
+              if (a.dropDay && b.dropDay) {
+                return new Date(a.dropDay) - new Date(b.dropDay);
+              }
+              // Items with dropDay come before items without
+              if (a.dropDay && !b.dropDay) return -1;
+              if (!a.dropDay && b.dropDay) return 1;
+              // If neither has dropDay, maintain original order
+              return 0;
+            });
+            
+            sortedCalcs.forEach(c => {
+              const data = this.calculateOne(c);
+              grandTotalJobCost += data.totalJobCost;
+              grandTotalVetPayout += data.finalTotalVetsPayout;
+              grandTotalRepPayout += data.finalTotalRepsPayout;
+              grandTotalRideAlongPayout += data.totalRideAlongPayout;
+              grandTotalAdditionalTeam += data.additionalTeamPayout;
+              grandTotalMoneyToReceive += this.parseValue(c.dropAmount);
+              grandTotalTeamPayout += data.totalTeamPayout;
+              grandTotalProfit += data.finalProfit;
+            });
+            
+            const header=`
+              <div style="text-align:center;margin-bottom:20px;">
+                <h1 style="color:#000;margin:0 0 5px 0;font-size:24px;font-weight:700;">📊 Payout Report</h1>
+                <div style="font-size:13px;color:#000;">Week: <strong>${this.escape(week)}</strong></div>
+              </div>`;
+            
+            const tableRows = sortedCalcs.map((c, i) => buildFilePrintHTML(this, c, this.calculators.indexOf(c))).join('');
+            
+            const grandTotalsRow = `
+              <tr style="background:#f0f0f0;border-top:3px solid #000;border-bottom:3px solid #000;">
+                <td colspan="2" style="padding:12px;font-weight:900;font-size:12px;text-align:center;color:#000;">TOTALS</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;color:#000;">${this.fmt(grandTotalJobCost)}</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;color:#000;">${this.fmt(grandTotalVetPayout)}</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;color:#000;">${this.fmt(grandTotalRepPayout)}</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;color:#000;">${this.fmt(grandTotalRideAlongPayout)}</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;color:#000;">${this.fmt(grandTotalAdditionalTeam)}</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;color:#000;">${this.fmt(grandTotalMoneyToReceive)}</td>
+                <td style="padding:12px;text-align:center;font-weight:900;font-size:11px;color:#000;">ALL</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;background:#fff;color:#000;">${this.fmt(grandTotalTeamPayout)}</td>
+                <td style="padding:12px;text-align:right;font-weight:900;font-size:12px;background:#fff;color:#000;">${this.fmt(grandTotalProfit)}</td>
+              </tr>
+            `;
+            
+            const table = `
+              <table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+                <thead>
+                  <tr style="background:#e0e0e0;color:#000;border-bottom:3px solid #000;">
+                    <th style="padding:12px;font-weight:700;text-align:left;font-size:11px;border-bottom:2px solid #000;">JOB#</th>
+                    <th style="padding:12px;font-weight:700;text-align:left;font-size:11px;border-bottom:2px solid #000;">CUSTOMER</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;">JOB COST</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;">VET</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;">REP</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;">R/A</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;">ADD TEAM</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;">💰 RECEIVE</th>
+                    <th style="padding:12px;font-weight:700;text-align:left;font-size:11px;border-bottom:2px solid #000;">DROP DAY</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;background:#f5f5f5;">TEAM TOT</th>
+                    <th style="padding:12px;font-weight:700;text-align:right;font-size:11px;border-bottom:2px solid #000;background:#f5f5f5;">PROFIT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                  ${grandTotalsRow}
+                </tbody>
+              </table>
+            `;
+            
+            const html = `<div style="padding:10px;font-family:Arial,sans-serif;">${header}${table}</div>`;
+            document.getElementById('printView').innerHTML=html;
+            document.getElementById('mainView').style.display='none';
+            document.getElementById('printView').style.display='block';
+            setTimeout(()=>{ window.print(); this.closePrint(); }, 100);
+          }catch(e){ window.__showErr && window.__showErr(e.message||String(e)); }
+        },
+
+        closePrint(){
+          const main=document.getElementById('mainView');
+          const pv=document.getElementById('printView');
+          if(main) main.style.display='block';
+          if(pv){ pv.style.display='none'; pv.innerHTML=''; }
+        },
+
+        showSaveDialog(){
+          const name=prompt('Enter report name:');
+          if(name && name.trim()){
+            const data = {
+              name:name.trim(),
+              date:new Date().toISOString(),
+              collectionWeek:(document.getElementById('collectionWeek')||{}).value||'',
+              calculators:this.calculators
+            };
+            try{ localStorage.setItem('report_'+Date.now(), JSON.stringify(data)); alert('Report saved!'); }
+            catch(e){ alert('Unable to save (localStorage blocked or full).'); }
+          }
+        }
+      };
+
+      window.app = app;
+
+      // Initialize only when DOM and critical nodes are present
+      function safeInit(){
+        try{
+          if(!document || !document.body){ setTimeout(safeInit, 30); return; }
+          app.init();
+        }catch(e){ window.__showErr && window.__showErr(e.message||String(e)); }
+      }
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', safeInit);
+      } else {
+        safeInit();
+      }
+    })();
+  </script>
+</body>
+</html>
